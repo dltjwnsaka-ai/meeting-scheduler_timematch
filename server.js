@@ -12,6 +12,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+let initPromise = db.init();
+app.use(async (req, res, next) => {
+  try {
+    await initPromise;
+    next();
+  } catch (e) {
+    next(e);
+  }
+});
+
 function genToken() {
   return crypto.randomBytes(8).toString('hex');
 }
@@ -20,81 +30,104 @@ app.get('/', (req, res) => {
   res.render('create');
 });
 
-app.post('/create', (req, res) => {
-  const { title, dates, start_hour, end_hour } = req.body;
-  const dateList = (dates || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+app.post('/create', async (req, res, next) => {
+  try {
+    const { title, dates, start_hour, end_hour } = req.body;
+    const dateList = (dates || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
 
-  if (!title || dateList.length === 0) {
-    return res.status(400).send('제목과 날짜를 선택해주세요. <a href="/">돌아가기</a>');
-  }
+    if (!title || dateList.length === 0) {
+      return res.status(400).send('제목과 날짜를 선택해주세요. <a href="/">돌아가기</a>');
+    }
 
-  const sh = parseInt(start_hour, 10) || 9;
-  const eh = parseInt(end_hour, 10) || 18;
-  const token = genToken();
+    const sh = parseInt(start_hour, 10) || 9;
+    const eh = parseInt(end_hour, 10) || 18;
+    const token = genToken();
 
-  db.prepare(
-    `INSERT INTO meetings (token, title, organizer, dates, start_hour, end_hour)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(token, title, '', JSON.stringify(dateList), sh, eh);
+    await db.run(
+      `INSERT INTO meetings (token, title, organizer, dates, start_hour, end_hour)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [token, title, '', JSON.stringify(dateList), sh, eh]
+    );
 
-  res.redirect(`/meeting/${token}/created`);
+    res.redirect(`/meeting/${token}/created`);
+  } catch (e) { next(e); }
 });
 
-app.get('/meeting/:token/created', (req, res) => {
-  const meeting = db.prepare('SELECT * FROM meetings WHERE token = ?').get(req.params.token);
-  if (!meeting) return res.status(404).send('회의를 찾을 수 없습니다.');
-  res.render('created', { meeting, host: req.headers.host });
+app.get('/meeting/:token/created', async (req, res, next) => {
+  try {
+    const meeting = await db.get('SELECT * FROM meetings WHERE token = ?', [req.params.token]);
+    if (!meeting) return res.status(404).send('회의를 찾을 수 없습니다.');
+    res.render('created', { meeting, host: req.headers.host });
+  } catch (e) { next(e); }
 });
 
-app.get('/meeting/:token', (req, res) => {
-  const meeting = db.prepare('SELECT * FROM meetings WHERE token = ?').get(req.params.token);
-  if (!meeting) return res.status(404).send('회의를 찾을 수 없습니다.');
-  meeting.dates = JSON.parse(meeting.dates);
-  res.render('respond', { meeting });
+app.get('/meeting/:token', async (req, res, next) => {
+  try {
+    const meeting = await db.get('SELECT * FROM meetings WHERE token = ?', [req.params.token]);
+    if (!meeting) return res.status(404).send('회의를 찾을 수 없습니다.');
+    meeting.dates = JSON.parse(meeting.dates);
+    res.render('respond', { meeting });
+  } catch (e) { next(e); }
 });
 
-app.post('/meeting/:token/respond', (req, res) => {
-  const meeting = db.prepare('SELECT * FROM meetings WHERE token = ?').get(req.params.token);
-  if (!meeting) return res.status(404).send('회의를 찾을 수 없습니다.');
+app.post('/meeting/:token/respond', async (req, res, next) => {
+  try {
+    const meeting = await db.get('SELECT * FROM meetings WHERE token = ?', [req.params.token]);
+    if (!meeting) return res.status(404).send('회의를 찾을 수 없습니다.');
 
-  const { participant, slots } = req.body;
-  if (!participant || !slots) {
-    return res.status(400).send('이름과 가능한 시간을 입력해주세요. <a href="javascript:history.back()">돌아가기</a>');
-  }
+    const { participant, slots } = req.body;
+    if (!participant || !slots) {
+      return res.status(400).send('이름과 가능한 시간을 입력해주세요.');
+    }
 
-  db.prepare(
-    `INSERT INTO responses (meeting_id, participant, slots) VALUES (?, ?, ?)`
-  ).run(meeting.id, participant, slots);
+    await db.run(
+      `INSERT INTO responses (meeting_id, participant, slots) VALUES (?, ?, ?)`,
+      [Number(meeting.id), participant, slots]
+    );
 
-  res.redirect(`/meeting/${req.params.token}/result`);
+    res.redirect(`/meeting/${req.params.token}/result`);
+  } catch (e) { next(e); }
 });
 
-app.get('/meeting/:token/result', (req, res) => {
-  const meeting = db.prepare('SELECT * FROM meetings WHERE token = ?').get(req.params.token);
-  if (!meeting) return res.status(404).send('회의를 찾을 수 없습니다.');
-  meeting.dates = JSON.parse(meeting.dates);
+app.get('/meeting/:token/result', async (req, res, next) => {
+  try {
+    const meeting = await db.get('SELECT * FROM meetings WHERE token = ?', [req.params.token]);
+    if (!meeting) return res.status(404).send('회의를 찾을 수 없습니다.');
+    meeting.dates = JSON.parse(meeting.dates);
 
-  const responses = db
-    .prepare('SELECT * FROM responses WHERE meeting_id = ? ORDER BY created_at')
-    .all(meeting.id);
+    const responses = await db.all(
+      'SELECT * FROM responses WHERE meeting_id = ? ORDER BY created_at',
+      [Number(meeting.id)]
+    );
 
-  const parsed = responses.map(r => ({
-    ...r,
-    slots: JSON.parse(r.slots),
-  }));
+    const parsed = responses.map(r => ({
+      ...r,
+      slots: JSON.parse(r.slots),
+    }));
 
-  res.render('result', { meeting, responses: parsed });
+    res.render('result', { meeting, responses: parsed });
+  } catch (e) { next(e); }
 });
 
-app.post('/meeting/:token/confirm', (req, res) => {
-  const { slot } = req.body;
-  db.prepare('UPDATE meetings SET confirmed_slot = ? WHERE token = ?').run(slot, req.params.token);
-  res.redirect(`/meeting/${req.params.token}/result`);
+app.post('/meeting/:token/confirm', async (req, res, next) => {
+  try {
+    const { slot } = req.body;
+    await db.run('UPDATE meetings SET confirmed_slot = ? WHERE token = ?', [slot, req.params.token]);
+    res.redirect(`/meeting/${req.params.token}/result`);
+  } catch (e) { next(e); }
 });
 
-app.listen(PORT, () => {
-  console.log(`서버 실행 중: http://localhost:${PORT}`);
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).send('서버 오류: ' + err.message);
 });
+
+// Vercel은 app을 export하고, 로컬은 listen
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`서버 실행 중: http://localhost:${PORT}`));
+}
+
+module.exports = app;
