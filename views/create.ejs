@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>타임매치 — 회의 가능시간 조율</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container xl">
+    <div class="brand">
+      <h1>타임매치</h1>
+      <p class="tagline">회의 가능시간 조율</p>
+    </div>
+    <p class="hint">주최자가 <b>후보 날짜</b>와 <b>시간 범위</b>를 정해두면, 참석자들이 그 안에서 본인 가능시간을 선택합니다.</p>
+
+    <form action="/create" method="POST">
+      <label>회의 제목
+        <input type="text" name="title" required placeholder="예: 4월 팀 정기 회의">
+      </label>
+
+      <label>하루 중 회의 가능 시간 범위</label>
+      <div class="row">
+        <label>시작 시각 <span class="sub">(이 시간부터)</span>
+          <select name="start_hour">
+            <% for (let h = 0; h < 24; h++) { %>
+              <option value="<%= h %>" <%= h === 9 ? 'selected' : '' %>><%= h %>:00</option>
+            <% } %>
+          </select>
+        </label>
+        <label>종료 시각 <span class="sub">(이 시간 전까지)</span>
+          <select name="end_hour">
+            <% for (let h = 1; h <= 24; h++) { %>
+              <option value="<%= h %>" <%= h === 18 ? 'selected' : '' %>><%= h %>:00</option>
+            <% } %>
+          </select>
+        </label>
+      </div>
+
+      <label>후보 날짜 선택 <span class="sub">(여러 날짜 클릭 — 참석자는 이 중에서 희망시간을 고릅니다)</span></label>
+      <div class="cal-header">
+        <button type="button" id="prevMonth">‹</button>
+        <span id="monthLabel"></span>
+        <button type="button" id="nextMonth">›</button>
+      </div>
+      <div class="month-cal" id="monthCal"></div>
+      <div class="picked-summary">선택된 날짜: <span id="pickedCount">0</span>개 — <span id="pickedList"></span></div>
+
+      <input type="hidden" name="dates" id="datesInput" required>
+      <button type="submit" class="primary">조율 시작 — 공유 링크 받기</button>
+    </form>
+  </div>
+
+  <script>
+    // 2026년 대한민국 공휴일
+    const HOLIDAYS_2026 = {
+      '2026-01-01': '신정',
+      '2026-01-02': '단체연차',
+      '2026-02-16': '설날 연휴',
+      '2026-02-17': '설날',
+      '2026-02-18': '설날 연휴',
+      '2026-03-01': '삼일절',
+      '2026-03-02': '대체공휴일(삼일절)',
+      '2026-05-01': '근로자의날',
+      '2026-05-04': '단체연차',
+      '2026-05-05': '어린이날',
+      '2026-05-24': '부처님오신날',
+      '2026-05-25': '대체공휴일(부처님오신날)',
+      '2026-06-03': '지방선거',
+      '2026-06-06': '현충일',
+      '2026-08-15': '광복절',
+      '2026-08-17': '대체공휴일(광복절)',
+      '2026-09-24': '추석 연휴',
+      '2026-09-25': '추석',
+      '2026-09-26': '추석 연휴',
+      '2026-09-28': '대체공휴일(추석)',
+      '2026-10-03': '개천절',
+      '2026-10-05': '대체공휴일(개천절)',
+      '2026-10-09': '한글날',
+      '2026-12-25': '성탄절',
+    };
+
+    const picked = new Set();
+    let viewDate = new Date();
+    viewDate.setDate(1);
+
+    const monthCal = document.getElementById('monthCal');
+    const monthLabel = document.getElementById('monthLabel');
+    const hiddenInput = document.getElementById('datesInput');
+    const pickedCount = document.getElementById('pickedCount');
+    const pickedList = document.getElementById('pickedList');
+
+    function iso(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function renderCal() {
+      monthCal.innerHTML = '';
+      const y = viewDate.getFullYear();
+      const m = viewDate.getMonth();
+      monthLabel.textContent = `${y}년 ${m + 1}월`;
+
+      ['일','월','화','수','목','금','토'].forEach(d => {
+        const el = document.createElement('div');
+        el.className = 'cal-dow';
+        el.textContent = d;
+        monthCal.appendChild(el);
+      });
+
+      const firstDow = new Date(y, m, 1).getDay();
+      const lastDate = new Date(y, m + 1, 0).getDate();
+      for (let i = 0; i < firstDow; i++) {
+        const el = document.createElement('div');
+        el.className = 'cal-cell empty';
+        monthCal.appendChild(el);
+      }
+      const today = iso(new Date());
+      for (let d = 1; d <= lastDate; d++) {
+        const dateObj = new Date(y, m, d);
+        const dateStr = iso(dateObj);
+        const dow = dateObj.getDay();
+        const holiday = HOLIDAYS_2026[dateStr];
+
+        const el = document.createElement('div');
+        el.className = 'cal-cell';
+        if (picked.has(dateStr)) el.classList.add('picked');
+        if (dateStr === today) el.classList.add('today');
+        if (holiday || dow === 0) el.classList.add('holiday');
+        else if (dow === 6) el.classList.add('saturday');
+
+        const num = document.createElement('div');
+        num.className = 'cal-num';
+        num.textContent = d;
+        el.appendChild(num);
+
+        if (holiday) {
+          const hname = document.createElement('div');
+          hname.className = 'cal-holiday';
+          hname.textContent = holiday;
+          el.appendChild(hname);
+          el.title = holiday;
+        }
+
+        el.onclick = () => {
+          if (picked.has(dateStr)) picked.delete(dateStr);
+          else picked.add(dateStr);
+          renderCal();
+          updateSummary();
+        };
+        monthCal.appendChild(el);
+      }
+    }
+
+    function updateSummary() {
+      const sorted = [...picked].sort();
+      pickedCount.textContent = sorted.length;
+      pickedList.textContent = sorted.join(', ');
+      hiddenInput.value = sorted.join(',');
+    }
+
+    document.getElementById('prevMonth').onclick = () => {
+      viewDate.setMonth(viewDate.getMonth() - 1);
+      renderCal();
+    };
+    document.getElementById('nextMonth').onclick = () => {
+      viewDate.setMonth(viewDate.getMonth() + 1);
+      renderCal();
+    };
+
+    renderCal();
+    updateSummary();
+  </script>
+</body>
+</html>

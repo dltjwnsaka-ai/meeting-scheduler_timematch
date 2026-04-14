@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>타임매치 — 링크 생성 완료</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="brand">
+      <h1>타임매치</h1>
+      <p class="tagline">조율 링크가 생성되었습니다</p>
+    </div>
+    <p><strong><%= meeting.title %></strong></p>
+
+    <h3>참석자에게 공유할 링크</h3>
+    <div class="link-box">
+      <input type="text" id="shareLink" value="http://<%= host %>/meeting/<%= meeting.token %>" readonly>
+      <button onclick="copy()">복사</button>
+    </div>
+    <p class="hint">참석자는 이 링크로 들어와 희망시간을 체크하여 제출합니다.</p>
+
+    <h3>주최자용 집계/확정 링크</h3>
+    <div class="link-box">
+      <input type="text" value="http://<%= host %>/meeting/<%= meeting.token %>/result" readonly>
+    </div>
+    <p class="hint">본인만 보관해 두세요. 참석자 응답이 모이면 여기서 최종 시간을 확정할 수 있습니다.</p>
+
+    <a href="/">새 타임매치 만들기</a>
+  </div>
+
+  <script>
+    function copy() {
+      const el = document.getElementById('shareLink');
+      el.select();
+      document.execCommand('copy');
+      alert('복사되었습니다');
+    }
+  </script>
+</body>
+</html>

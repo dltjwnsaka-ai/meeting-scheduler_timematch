@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>타임매치 — <%= meeting.title %> 집계</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container xl">
+    <div class="brand small">
+      <span class="logo-mini">타임매치</span>
+      <span class="tagline-mini">회의 가능시간 조율</span>
+    </div>
+    <h1><%= meeting.title %></h1>
+    <p>응답자 수: <%= responses.length %>명</p>
+
+    <% if (meeting.confirmed_slot) { %>
+      <div class="confirmed">
+        ✅ 확정된 시간: <strong><%= meeting.confirmed_slot %></strong>
+      </div>
+    <% } %>
+
+    <h3>응답자 목록</h3>
+    <ul>
+      <% responses.forEach(r => { %>
+        <li><%= r.participant %> (<%= r.slots.length %>개 시간 선택)</li>
+      <% }) %>
+    </ul>
+
+    <h3>가능시간 집계 (진한 색일수록 가능한 인원이 많음)</h3>
+    <p class="hint">셀 안의 숫자를 클릭하면 해당 시간으로 회의를 확정합니다.</p>
+
+    <div class="grid-wrap">
+      <table class="slot-grid">
+        <thead>
+          <tr>
+            <th>시간</th>
+            <% meeting.dates.forEach(d => { %>
+              <th><%= d %></th>
+            <% }) %>
+          </tr>
+        </thead>
+        <tbody>
+          <%
+            const counts = {};
+            responses.forEach(r => {
+              r.slots.forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+            });
+            const total = responses.length || 1;
+          %>
+          <% for (let h = meeting.start_hour; h < meeting.end_hour; h++) { %>
+            <% for (let m = 0; m < 60; m += 30) { %>
+              <tr>
+                <td class="time-label"><%= String(h).padStart(2,'0') %>:<%= String(m).padStart(2,'0') %></td>
+                <% meeting.dates.forEach(d => {
+                     const slot = d + ' ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+                     const c = counts[slot] || 0;
+                     const ratio = c / total;
+                     const alpha = ratio.toFixed(2);
+                     const names = responses.filter(r => r.slots.includes(slot)).map(r => r.participant).join(', ');
+                %>
+                  <td class="heat"
+                      style="background: rgba(46, 125, 50, <%= alpha %>); color: <%= ratio > 0.5 ? 'white' : 'black' %>;"
+                      title="<%= names %>">
+                    <form method="POST" action="/meeting/<%= meeting.token %>/confirm" style="margin:0">
+                      <input type="hidden" name="slot" value="<%= slot %>">
+                      <button type="submit" class="cell-btn"><%= c %></button>
+                    </form>
+                  </td>
+                <% }) %>
+              </tr>
+            <% } %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <p><a href="/meeting/<%= meeting.token %>">← 응답 페이지로</a> | <a href="/">새 타임매치 만들기</a></p>
+  </div>
+</body>
+</html>

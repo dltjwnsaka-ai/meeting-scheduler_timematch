@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>타임매치 — <%= meeting.title %></title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container xl">
+    <div class="brand small">
+      <span class="logo-mini">타임매치</span>
+      <span class="tagline-mini">회의 가능시간 조율</span>
+    </div>
+    <h1><%= meeting.title %></h1>
+
+    <% if (meeting.confirmed_slot) { %>
+      <div class="confirmed">
+        ✅ 확정된 시간: <strong><%= meeting.confirmed_slot %></strong>
+      </div>
+    <% } %>
+
+    <form action="/meeting/<%= meeting.token %>/respond" method="POST" id="respondForm">
+      <label>참석자 이름
+        <input type="text" name="participant" required placeholder="본인 이름">
+      </label>
+
+      <p class="hint">주최자가 지정한 후보 날짜/시간 범위 안에서 <b>가능한 시간대</b>를 클릭(또는 드래그)해 선택하세요. 다시 클릭하면 해제됩니다.</p>
+
+      <div class="grid-wrap">
+        <table class="slot-grid" id="grid">
+          <thead>
+            <tr>
+              <th>시간</th>
+              <% meeting.dates.forEach(d => { %>
+                <th><%= d %></th>
+              <% }) %>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (let h = meeting.start_hour; h < meeting.end_hour; h++) { %>
+              <% for (let m = 0; m < 60; m += 30) { %>
+                <tr>
+                  <td class="time-label"><%= String(h).padStart(2,'0') %>:<%= String(m).padStart(2,'0') %></td>
+                  <% meeting.dates.forEach(d => {
+                       const slot = d + ' ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+                  %>
+                    <td class="slot" data-slot="<%= slot %>"></td>
+                  <% }) %>
+                </tr>
+              <% } %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <input type="hidden" name="slots" id="slotsInput">
+      <button type="submit" class="primary">가능시간 제출</button>
+    </form>
+  </div>
+
+  <script>
+    const selected = new Set();
+    let dragging = false;
+    let dragMode = null;
+
+    document.querySelectorAll('.slot').forEach(cell => {
+      cell.addEventListener('mousedown', e => {
+        e.preventDefault();
+        dragging = true;
+        const s = cell.dataset.slot;
+        dragMode = selected.has(s) ? 'remove' : 'add';
+        apply(cell);
+      });
+      cell.addEventListener('mouseenter', () => {
+        if (dragging) apply(cell);
+      });
+    });
+
+    document.addEventListener('mouseup', () => { dragging = false; });
+
+    function apply(cell) {
+      const s = cell.dataset.slot;
+      if (dragMode === 'add') {
+        selected.add(s);
+        cell.classList.add('on');
+      } else {
+        selected.delete(s);
+        cell.classList.remove('on');
+      }
+    }
+
+    document.getElementById('respondForm').addEventListener('submit', e => {
+      if (selected.size === 0) {
+        e.preventDefault();
+        alert('가능한 시간을 하나 이상 선택해주세요');
+        return;
+      }
+      document.getElementById('slotsInput').value = JSON.stringify([...selected]);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,423 @@
+* { box-sizing: border-box; }
+
+@keyframes rainbow-bg {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes rainbow-text {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+body {
+  font-family: -apple-system, "Malgun Gothic", "Segoe UI", sans-serif;
+  background: linear-gradient(270deg,
+    #ff6b6b, #feca57, #48dbfb, #1dd1a1, #5f27cd, #ff9ff3, #ff6b6b);
+  background-size: 400% 400%;
+  animation: rainbow-bg 15s ease infinite;
+  margin: 0;
+  padding: 40px 24px;
+  color: #1a1a2e;
+  min-height: 100vh;
+  font-size: 18px;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  background: white;
+  padding: 48px;
+  border-radius: 20px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+}
+
+.container.xl { max-width: 1280px; }
+
+h1 {
+  margin-top: 0;
+  font-size: 42px;
+  font-weight: 900;
+  background: linear-gradient(90deg,
+    #ff6b6b, #feca57, #1dd1a1, #48dbfb, #5f27cd, #ff9ff3, #ff6b6b);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rainbow-text 4s linear infinite;
+}
+
+h3 {
+  margin-top: 32px;
+  font-size: 24px;
+  color: #333;
+}
+
+p, li { font-size: 18px; }
+
+label {
+  display: block;
+  margin: 24px 0 10px;
+  font-weight: 700;
+  font-size: 18px;
+  color: #333;
+}
+
+input[type=text], input[type=date], select {
+  width: 100%;
+  padding: 16px 18px;
+  border: 2.5px solid transparent;
+  background:
+    linear-gradient(white, white) padding-box,
+    linear-gradient(90deg, #ff6b6b, #feca57, #1dd1a1, #48dbfb, #5f27cd) border-box;
+  border-radius: 12px;
+  font-size: 18px;
+  margin-top: 6px;
+  transition: transform 0.15s;
+}
+
+input[type=text]:focus, select:focus {
+  outline: none;
+  transform: scale(1.01);
+}
+
+button {
+  padding: 12px 22px;
+  border: 2px solid #d0d7de;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+button:hover { background: #f5f7fa; transform: translateY(-1px); }
+
+button.primary {
+  background: linear-gradient(90deg,
+    #ff6b6b, #feca57, #1dd1a1, #48dbfb, #5f27cd, #ff9ff3, #ff6b6b);
+  background-size: 200% auto;
+  animation: rainbow-text 4s linear infinite;
+  color: white;
+  border: none;
+  padding: 18px 28px;
+  font-size: 20px;
+  font-weight: 800;
+  width: 100%;
+  margin-top: 32px;
+  box-shadow: 0 8px 24px rgba(95, 39, 205, 0.35);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(95, 39, 205, 0.45);
+}
+
+.row { display: flex; gap: 20px; }
+.row label { flex: 1; }
+
+.hint { color: #666; font-size: 16px; }
+
+.link-box {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+.link-box input { flex: 1; background: #f5f7fa; font-size: 16px; }
+
+.confirmed {
+  background: linear-gradient(90deg, #1dd1a1, #48dbfb);
+  color: white;
+  border: none;
+  padding: 20px 24px;
+  border-radius: 14px;
+  margin: 24px 0;
+  font-size: 20px;
+  font-weight: 700;
+  box-shadow: 0 6px 20px rgba(29, 209, 161, 0.3);
+}
+
+/* 월간 달력 */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin: 20px 0 16px;
+}
+
+.cal-header span {
+  font-size: 26px;
+  font-weight: 900;
+  min-width: 200px;
+  text-align: center;
+  background: linear-gradient(90deg, #5f27cd, #ff6b6b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cal-header button {
+  width: 52px;
+  height: 52px;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #48dbfb, #5f27cd);
+  color: white;
+  border: none;
+}
+
+.month-cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fff5f5, #e0f7fa, #f3e5f5);
+  border-radius: 16px;
+}
+
+.cal-dow {
+  text-align: center;
+  font-weight: 900;
+  padding: 14px 0;
+  font-size: 17px;
+}
+
+.cal-dow:nth-child(1) { color: #ff6b6b; }
+.cal-dow:nth-child(2) { color: #feca57; }
+.cal-dow:nth-child(3) { color: #1dd1a1; }
+.cal-dow:nth-child(4) { color: #48dbfb; }
+.cal-dow:nth-child(5) { color: #5f27cd; }
+.cal-dow:nth-child(6) { color: #ff9ff3; }
+.cal-dow:nth-child(7) { color: #ee5253; }
+
+.cal-cell {
+  aspect-ratio: 1.1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
+  border: 3px solid transparent;
+  transition: all 0.15s;
+  min-height: 80px;
+  padding: 6px 4px;
+  position: relative;
+}
+
+.cal-num { font-size: 20px; line-height: 1; }
+.cal-holiday {
+  font-size: 11px;
+  font-weight: 600;
+  color: #d32f2f;
+  line-height: 1.15;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-cell.holiday .cal-num { color: #d32f2f; }
+.cal-cell.saturday .cal-num { color: #1976d2; }
+.cal-cell.picked .cal-num,
+.cal-cell.picked .cal-holiday { color: white; }
+
+.cal-cell:hover:not(.empty) {
+  background: linear-gradient(135deg, #fff5f5, #e0f7fa);
+  transform: scale(1.06);
+}
+
+.cal-cell.empty {
+  background: transparent;
+  cursor: default;
+}
+
+.cal-cell.today {
+  border-color: #feca57;
+  color: #ff6b6b;
+}
+
+.cal-cell.picked {
+  background: linear-gradient(135deg, #ff6b6b, #feca57, #1dd1a1, #48dbfb, #5f27cd);
+  background-size: 200% 200%;
+  animation: rainbow-bg 4s ease infinite;
+  color: white;
+  box-shadow: 0 6px 16px rgba(95, 39, 205, 0.4);
+  border-color: white;
+}
+
+.picked-summary {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(90deg, #fff5f5, #e0f7fa, #f3e5f5);
+  border-radius: 12px;
+  font-size: 17px;
+  color: #333;
+  font-weight: 500;
+}
+
+.picked-summary span:first-of-type {
+  font-weight: 900;
+  font-size: 20px;
+  color: #5f27cd;
+}
+
+/* 시간 슬롯 그리드 */
+.grid-wrap {
+  overflow-x: auto;
+  margin: 24px 0;
+  padding: 16px;
+  background: linear-gradient(135deg, #fff5f5, #e0f7fa, #f3e5f5);
+  border-radius: 16px;
+}
+
+.slot-grid {
+  border-collapse: separate;
+  border-spacing: 4px;
+  user-select: none;
+  min-width: 100%;
+}
+
+.slot-grid th, .slot-grid td {
+  text-align: center;
+  font-size: 16px;
+}
+
+.slot-grid th {
+  background: linear-gradient(135deg, #5f27cd, #48dbfb);
+  color: white;
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 17px;
+  min-width: 140px;
+}
+
+.slot-grid .time-label {
+  padding: 10px 16px;
+  background: white;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: 10px;
+  color: #5f27cd;
+  font-size: 16px;
+}
+
+.slot {
+  min-width: 140px;
+  height: 52px;
+  background: white;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.1s;
+}
+
+.slot:hover {
+  background: linear-gradient(135deg, #fff5f5, #e0f7fa);
+  transform: scale(1.05);
+}
+
+.slot.on {
+  background: linear-gradient(135deg, #ff6b6b, #feca57, #1dd1a1, #48dbfb, #5f27cd);
+  background-size: 200% 200%;
+  animation: rainbow-bg 4s ease infinite;
+  box-shadow: 0 4px 12px rgba(95, 39, 205, 0.3);
+}
+
+.heat {
+  min-width: 140px;
+  height: 56px;
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cell-btn {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 18px;
+  border-radius: 8px;
+}
+
+.cell-btn:hover { background: rgba(0,0,0,0.08); }
+
+ul { padding-left: 24px; }
+ul li { margin: 8px 0; font-size: 17px; }
+
+.sub {
+  font-weight: 400;
+  font-size: 14px;
+  color: #888;
+  margin-left: 6px;
+}
+
+/* 브랜드 로고 영역 */
+.brand {
+  text-align: center;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 2px dashed #eee;
+}
+
+.brand h1 {
+  font-size: 56px;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+.brand .tagline {
+  margin: 6px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #666;
+  letter-spacing: 2px;
+}
+
+.brand.small {
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 8px;
+}
+
+.logo-mini {
+  font-size: 24px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #1dd1a1, #48dbfb, #5f27cd, #ff9ff3, #ff6b6b);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rainbow-text 4s linear infinite;
+  letter-spacing: -0.5px;
+}
+
+.tagline-mini {
+  font-size: 14px;
+  color: #888;
+  letter-spacing: 1px;
+}
+
+a {
+  color: #5f27cd;
+  font-weight: 600;
+  font-size: 17px;
+}
